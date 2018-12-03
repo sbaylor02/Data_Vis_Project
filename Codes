@@ -1,5 +1,3 @@
-#Pavel Code
-
 library(shiny)
 library(ggplot2)
 library(leaflet)
@@ -10,17 +8,19 @@ street_lights[street_lights$Service %in% c(""," "),]$Service <- "Unknown"
 street_lights$Inspect_Date2 <- as.Date(street_lights$Inspect_Date)
 
 ui <- fluidPage(
+  selectInput(inputId = "owner",label = "Ownership", choices = unique(street_lights$Ownership)),
   leafletOutput("mymap",height = 1000)
 )
 
 server <- function(input,output, session){
   
   data <- reactive({
-    x <- df
+    x <- street_lights[street_lights$Ownership == input$owner,]
+    return(x)
   })
   
   output$mymap <- renderLeaflet({
-    df <- data()
+    street_lights <- data()
     
     m <- leaflet(data = street_lights) %>%
       addTiles() %>%
