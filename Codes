@@ -1,0 +1,33 @@
+#Pavel Code
+
+library(shiny)
+library(ggplot2)
+library(leaflet)
+
+street_lights <- read.csv("Street_Lights.csv", stringsAsFactors = F)
+street_lights[street_lights$Pole_Type %in% c(""," "),]$Pole_Type <- "Unknown"
+street_lights[street_lights$Service %in% c(""," "),]$Service <- "Unknown"
+street_lights$Inspect_Date2 <- as.Date(street_lights$Inspect_Date)
+
+ui <- fluidPage(
+  leafletOutput("mymap",height = 1000)
+)
+
+server <- function(input,output, session){
+  
+  data <- reactive({
+    x <- df
+  })
+  
+  output$mymap <- renderLeaflet({
+    df <- data()
+    
+    m <- leaflet(data = street_lights) %>%
+      addTiles() %>%
+      addMarkers(lng = ~Lon,
+                 lat = ~Lat)
+    m
+  })
+}
+
+shinyApp(ui = ui, server = server)
