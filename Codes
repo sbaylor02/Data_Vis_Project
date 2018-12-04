@@ -24,8 +24,8 @@ server <- function(input,output, session){
     
     m <- leaflet(data = street_lights) %>%
       addTiles() %>%
-      addMarkers(lng = ~Lon,
-                 lat = ~Lat)
+      addCircleMarkers(lng = ~Lon,
+                 lat = ~Lat, radius = 2)
     m
   })
 }
