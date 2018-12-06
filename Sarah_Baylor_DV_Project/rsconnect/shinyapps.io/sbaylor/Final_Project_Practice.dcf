@@ -1,0 +1,13 @@
+name: Final_Project_Practice
+title: Final_Project_Practice
+username:
+account: sbaylor
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 605479
+bundleId: 1743765
+url: https://sbaylor.shinyapps.io/Final_Project_Practice/
+when: 1544043703.73482
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: 311_Contact_Management_Cases.csv|311_Phone_Call_Log_Mod.csv|Code_Enforcement_Cases.csv|Parks_Locations_and_Features.csv|Public_Facilities.csv|Street_Lights.csv|School_Boundaries/School_Boundaries.cpg|School_Boundaries/School_Boundaries.dbf|School_Boundaries/School_Boundaries.prj|School_Boundaries/School_Boundaries.shp|School_Boundaries/School_Boundaries.shx
