@@ -3,28 +3,45 @@
 #East
 #Final Project
 
-#set working directory
-setwd("~/Desktop/Final_Project_Practice/")
-
 #load the necessary packages
 library(shiny)
 library(tidyverse)
+library(tidycensus)
+library(tidyr)
 library(leaflet)
 library(rgdal)
 library(DT)
 library(rgeos)
 library(sp)
 library(lubridate)
+library(ggplot2)
+library(ggmap)
+register_google(key = "AIzaSyArtVYaFH3qvcVP2ufW5_LMMANBwZK2vS4")
+
+##########Shravya
+s1 <- readOGR(dsn = '2010_CensusData', 
+              "2010_CensusData", 
+              stringsAsFactors = FALSE)
+pal1 <- colorNumeric(palette = "viridis", 
+                    domain = s1$SE_T002_01)
 
 #read in the data
-districts <- readOGR(dsn = "~/Documents/GitHub/Data_Vis_Project/Group2_FinalProject_DV/City_Council_Districts/", 
+districts <- readOGR(dsn = "City_Council_Districts", 
                      layer = "City_Council_Districts",
                      stringsAsFactors = FALSE)
 
-abandoned <- readOGR(dsn = "~/Documents/GitHub/Data_Vis_Project/Group2_FinalProject_DV/Abandoned_Property_Parcels/",
+abandoned <- readOGR(dsn = "Abandoned_Property_Parcels",
                      layer = "Abandoned_Property_Parcels",
                      stringsAsFactors = FALSE)
 
+##########Pavel
+street_lights <- read.csv("Street_Lights.csv", 
+                          stringsAsFactors = F)
+street_lights[street_lights$Pole_Type %in% c(""," "),]$Pole_Type <- "Unknown"
+street_lights[street_lights$Service %in% c(""," "),]$Service <- "Unknown"
+street_lights$Inspect_Date2 <- as.Date(street_lights$Inspect_Date)
+
+###########Sarah
 #find the center of each abandoned property to create points for the map
 abandoned_center <- SpatialPointsDataFrame(gCentroid(abandoned, 
                                                      byid = TRUE),
@@ -37,30 +54,75 @@ abandoned_center@data$Year_of_Ou <- as.ordered(year(abandoned_center@data$Date_o
 # Define UI for application that draws a histogram
 ui <- fluidPage(
    
-   # Application title
-   titlePanel(""),
-   
-   # Sidebar with a slider input for number of bins 
-   sidebarLayout(
-      sidebarPanel(
-         sliderInput("bins",
-                     "Number of bins:",
-                     min = 1,
-                     max = 50,
-                     value = 30)
-      ),
-      
-      # Show a plot of the generated distribution
-      mainPanel(
-         plotOutput("distPlot")
-      )
-   )
+  # Application title
+  titlePanel("Abandoned Properties by Council District"),
+    # Show a plot of the generated distribution
+    tabsetPanel(
+        tabPanel("rose",
+                 fluid = TRUE),
+        tabPanel("shravya",
+                 fluid = TRUE,
+                 titlePanel("Choose a race and click on a census district to see the race's population within the district"),
+                 column(8,leafletOutput("map", height="800px"))),
+        tabPanel("pavel",
+                 fluid = TRUE,
+                 selectInput(inputId = "owner",
+                             label = "Ownership", 
+                             choices = unique(street_lights$Ownership)),
+                 leafletOutput("mymap",height = 1000)),
+        tabPanel("sarah", 
+                 fluid = TRUE, 
+                 leafletOutput("district_map"), 
+                 id = "tab1",
+                 sidebarLayout(
+                   sidebarPanel(
+                     #create a checkbox to select city council districts
+                     checkboxGroupInput(inputId = "district",
+                                        label = "Choose a City Council District",
+                                        choices = unique(districts$Num),
+                                        selected = unique(districts$Num)),
+                     #create a checkbox to select the outcome of the abandoned property
+                     checkboxGroupInput(inputId = "outcome",
+                                        label = "Choose an Outcome",
+                                        choices = unique(abandoned$Outcome_St),
+                                        selected = unique(abandoned$Outcome_St)),
+                     #create a checkbox for the year of the outcome for the abandoned property
+                     checkboxGroupInput(inputId = "year",
+                                        label = "Choose a Year",
+                                        choices = sort(unique(abandoned_center$Year_of_Ou)),
+                                        selected = unique(abandoned_center$Year_of_Ou))),
+                   # Show a plot of the generated distribution
+                   mainPanel(leafletOutput("district_map")))),
+        tabPanel("catherine",
+                 fluid = TRUE)
+  )
 )
-
 # Define server logic required to draw a histogram
 server <- function(input, output) {
    
-   output$distPlot <- renderPlot({
+   pal2 <- colorFactor(palette = 'Set1', domain = abandoned_center$Outcome_St)
+   districts$popup_dist <- paste("Council District: ", districts$Dist, "<br>",
+                                 "Number: ", districts$Num, "<br>",
+                                 "Council Member: ", districts$Council_Me)
+   
+   output$district_map <- renderLeaflet({
+     #create a leaflet map
+     leaflet(data = districts[districts$Num %in% input$district,]) %>%
+       addTiles() %>%
+       addPolygons(color = "green", 
+                   weight = 1,
+                   smoothFactor = 0.5,
+                   opacity = 1.0,
+                   fillOpacity = 0.5,
+                   fillColor = ~colorFactor(palette = "YlGn", domain = Dist)(Dist),
+                   popup = ~popup_dist) %>%
+       addCircleMarkers(data = abandoned_center[(abandoned_center$Council_Di %in% input$district) & 
+                                                  (abandoned_center$Outcome_St %in% input$outcome) &
+                                                  (abandoned_center$Year_of_Ou %in% input$year),],
+                        radius = 2,
+                        popup = ~Suffix,
+                        options = list(zindex = 10),
+                        color = ~pal2(Outcome_St))
       
    })
 }
