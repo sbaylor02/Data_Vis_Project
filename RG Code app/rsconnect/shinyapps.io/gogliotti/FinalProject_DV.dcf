@@ -1,0 +1,13 @@
+name: FinalProject_DV
+title: FinalProject_DV
+username:
+account: gogliotti
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 604153
+bundleId: 1741044
+url: https://gogliotti.shinyapps.io/FinalProject_DV/
+when: 1543973906.38244
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: 311_Contact_Management_Cases.csv|311_Phone_Call_Log_Mod.csv|Code_Enforcement_Cases.csv|Parks_Locations_and_Features.csv|Public_Facilities.csv|Street_Lights.csv|Abandoned_Property_Parcels/Abandoned_Property_Parcels.cpg|Abandoned_Property_Parcels/Abandoned_Property_Parcels.dbf|Abandoned_Property_Parcels/Abandoned_Property_Parcels.prj|Abandoned_Property_Parcels/Abandoned_Property_Parcels.shp|Abandoned_Property_Parcels/Abandoned_Property_Parcels.shx|School_Boundaries/School_Boundaries.cpg|School_Boundaries/School_Boundaries.dbf|School_Boundaries/School_Boundaries.prj|School_Boundaries/School_Boundaries.shp|School_Boundaries/School_Boundaries.shx|City_Council_Districts
