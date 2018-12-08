@@ -1,0 +1,136 @@
+#
+# Abantoned Properties Graphical Tab
+# Catherine Aslinger
+#
+
+library(shiny)
+library(rgdal)
+library(lubridate)
+library(plyr)
+
+setwd("~/Desktop")
+
+#load Abandoned_Property_Parcels shapefile
+abandPropParc <- readOGR(dsn = "Abandoned_Property_Parcels", 
+                         layer = "Abandoned_Property_Parcels", 
+                         stringsAsFactors = FALSE)
+
+#extract data into separate data frame
+abandPropParc_data <- abandPropParc@data
+
+#change variable type of Date_of_Ou to date
+abandPropParc_data$Date_of_Ou <- as.Date(abandPropParc_data$Date_of_Ou)
+
+#add variable to show year of Date_of_OU
+abandPropParc_data$Year_of_Ou <- year(abandPropParc_data$Date_of_Ou)
+
+# Define UI for application that draws a line chart and bar chart of
+# details for the South Bend abandoned property parcels data set
+ui <- fluidPage(
+   
+   # Application title
+   titlePanel("South Bend Abandoned Properties Parcels"),
+   
+   # Sidebar with various inputs to control both the line and bar chart outputs
+   sidebarLayout(
+      sidebarPanel(
+        
+        # add help text to guide the user to make selections
+        helpText("Select desired details with which to customize the charts by 
+                 using the various inputs below."),
+        
+        # add help text to guide the user to make selections
+        helpText("NA selections denote missing values."),
+        
+        # add multi-check box input selection for the type of outcome(s)
+        checkboxGroupInput(inputId = "outcome",
+                           label = "Abandoned Property Parcel Outcome:",
+                           choices = c("Demolished", "Deconstructed", "Repaired",
+                                       "Repaired & Occupied", "Occupied & Not Repaired", 
+                                       "NA"),
+                           selected = c("Demolished", "Deconstructed", "Repaired",
+                                        "Repaired & Occupied", "Occupied & Not Repaired", 
+                                        "NA")),
+        
+        # add multi-check box input selection for the city council district(s) to view
+        checkboxGroupInput(inputId = "councilDistrict",
+                           label = "City Council District:",
+                           choices = c("1", "2", "3", "4", "5", "6", "NA"),
+                           selected = c("1", "2", "3", "4", "5", "6", "NA")),
+        
+        # add slider input to select which year range of data to show
+        # date range of data is 3/28/13 to 3/23/18
+        sliderInput(inputId = "years",
+                    "Years of Data to Display:",
+                    min = 2013,
+                    max = 2018,
+                    value = c(2013, 2018),
+                    sep = ""),
+        
+        # add help text to define available date range
+        helpText("Property outcome dates range from March 2013 through March 2018.")
+      ),
+      
+      # Show the generated line and bar charts
+      mainPanel(
+        
+        # line chart of outcome figures over time
+        plotOutput("outcomePlot"),
+         
+        # bar chart of code enforcment details
+        plotOutput("codeEnforPlot")
+      )
+   )
+)
+
+# Define server logic required to draw line and bar charts
+server <- function(input, output, session) {
+   
+  # generate inputs based on input$outcome, input$councilDistrict, & input$dateRange
+  # from ui.R
+  
+  APP_data <- reactive({
+    abandPropParc_data[(abandPropParc_data$Outcome_St %in% input$outcome) & 
+                         (abandPropParc_data$Council_Di %in% input$councilDistrict) &
+                         (abandPropParc_data$Year_of_Ou >= input$years[1] & 
+                            abandPropParc_data$Year_of_Ou <= input$years[2]),]
+  })
+
+  # generate frequency table for line chart
+  APP_data_freq <- reactive({
+    plyr::count(APP_data(), c("Outcome_St", "Year_of_Ou"))
+  })
+  
+
+  # draw line chart displaying outcome results over time
+   output$outcomePlot <- renderPlot({
+      ggplot(data = APP_data_freq(),
+             aes(x = APP_data_freq()$Year_of_Ou, 
+                 y = APP_data_freq()$freq, 
+                 group = APP_data_freq()$Outcome_St, 
+                 color = APP_data_freq()$Outcome_St)) +
+       geom_line() +
+       geom_point() +
+       labs(title = "Parcel Outcomes Over Time", x = "Year", y = "Count of Parcels") +
+       scale_color_discrete("Parcel Outcome") +
+       theme_minimal()
+   })
+   
+  # draw bar chart displaying 
+   output$codeEnforPlot <- renderPlot({
+     ggplot(data = APP_data(), 
+            aes(x = APP_data()$Code_Enfor)) +
+       geom_bar() +
+       labs(title = "Parcel Code Enforcement Distribution", 
+            x = "Code Enforcement Categories",
+            y = "Count of Parcels") +
+       theme_minimal() +
+       theme(axis.text.x = element_text(angle = 40,
+                                        hjust = 1,
+                                        vjust = 1))
+   })
+}
+
+# Run the application 
+shinyApp(ui = ui, server = server)
+
