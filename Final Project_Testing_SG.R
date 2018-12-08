@@ -17,7 +17,7 @@ library(tidyr)
 
 
 
-s1 <- readOGR('/Users/shravyaguda/Documents/Notre Dame MSDS/Fall 2018/Data Visualization/Data-Viz-2018-Fall-master 2/FinalProject/2010_CensusData', stringsAsFactors = FALSE)
+s1 <- readOGR('2010_CensusData', '2010_CensusData', stringsAsFactors = FALSE)
 library(tidyverse)
 
 library(tidycensus)

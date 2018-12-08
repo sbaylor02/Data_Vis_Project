@@ -51,9 +51,10 @@ s1$popup <- paste("<b>",s1$NAMELSAD,"</b><br>",
                   "Population: ",s1$SE_T003_00,sep ="")
 
 ##########Shravya
-pal1 <- colorNumeric(palette = "viridis", 
-                     domain = s1$SE_T002_01)
+s2 <- readOGR(dsn = '2010_CensusData', "2010_CensusData", stringsAsFactors = FALSE)
 
+
+##########Sarah
 #read in the data
 districts <- readOGR(dsn = "City_Council_Districts", 
                      layer = "City_Council_Districts",
@@ -63,14 +64,6 @@ abandoned <- readOGR(dsn = "Abandoned_Property_Parcels",
                      layer = "Abandoned_Property_Parcels",
                      stringsAsFactors = FALSE)
 
-##########Pavel
-street_lights <- read.csv("Street_Lights.csv", 
-                          stringsAsFactors = F)
-street_lights[street_lights$Pole_Type %in% c(""," "),]$Pole_Type <- "Unknown"
-street_lights[street_lights$Service %in% c(""," "),]$Service <- "Unknown"
-street_lights$Inspect_Date2 <- as.Date(street_lights$Inspect_Date)
-
-###########Sarah
 #find the center of each abandoned property to create points for the map
 abandoned_center <- SpatialPointsDataFrame(gCentroid(abandoned, 
                                                      byid = TRUE),
@@ -80,11 +73,21 @@ abandoned_center <- SpatialPointsDataFrame(gCentroid(abandoned,
 #add the year of outcome as a column in the abandoned data set
 abandoned_center@data$Year_of_Ou <- as.ordered(year(abandoned_center@data$Date_of_Ou))
 
+##########Pavel
+street_lights <- read.csv("Street_Lights.csv", 
+                          stringsAsFactors = F)
+street_lights[street_lights$Pole_Type %in% c(""," "),]$Pole_Type <- "Unknown"
+street_lights[street_lights$Service %in% c(""," "),]$Service <- "Unknown"
+street_lights$Inspect_Date2 <- as.Date(street_lights$Inspect_Date)
+
+
+
+
 # Define UI for application that draws a histogram
 ui <- fluidPage(
   
   # Application title
-  titlePanel("Abandoned Properties by Council District"),
+  titlePanel("Data Builds a Stronger South Bend"),
   # Show a plot of the generated distribution
   tabsetPanel(type = "tabs",
               id = "myTabs",
@@ -94,7 +97,7 @@ ui <- fluidPage(
              headerPanel("Select a Census Tract"),
              br(),
              column(7,
-                    leafletOutput("map", height="500px")),
+                    leafletOutput("map_rose", height="500px")),
              column(5, 
                     plotOutput("barpop", height="300px"),
                     br(), 
@@ -104,7 +107,7 @@ ui <- fluidPage(
              fluid = TRUE,
              value = "tab2",
              titlePanel("Choose a race and click on a census district to see the race's population within the district"),
-             column(8,leafletOutput("map", height="800px"))),
+             column(8,leafletOutput("map_shravya", height="800px"))),
     tabPanel("pavel",
              fluid = TRUE,
              id = "tab3",
@@ -133,7 +136,7 @@ ui <- fluidPage(
                                     choices = sort(unique(abandoned_center$Year_of_Ou)),
                                     selected = unique(abandoned_center$Year_of_Ou))),
                # Show a plot of the generated distribution
-               leafletOutput("district_map"))),
+               mainPanel(leafletOutput("district_map")))),
     tabPanel("catherine",
              fluid = TRUE,
              value = "tab5")
@@ -147,7 +150,7 @@ server <- function(input, output) {
   data_of_click <- reactiveValues(clickedMarker=NULL)
   
   # Leaflet map 
-  output$map <- renderLeaflet({
+  output$map_rose <- renderLeaflet({
     leaflet()  %>%
       addTiles()  %>%
       addPolygons(data = s1, layer=~NAME, stroke = TRUE, fillOpacity = .35,  popup = ~popup)
@@ -182,14 +185,86 @@ server <- function(input, output) {
                              "Plot of Census Tract 15", 
                              (paste("Plot of Census Tract",input$map_shape_click$id))))})
   
+  # Make a gender barplot  depending of the selected point
+  
+  output$bargen <- renderPlot({
+    
+    gender_sub_long2 <- gender_sub_long %>% 
+      filter (NAME==ifelse(is.null(input$map_shape_click$id), NAME,input$map_shape_click$id))
+    
+    ggplot(gender_sub_long2, aes(x=NAME, y=(value/Total), fill=variable), label=value)+ 
+      geom_bar(position = "fill",stat = "identity", fill=c("salmon", "royalblue3"))  +
+      theme_void() +
+      theme(legend.position="none", plot.title = element_text(hjust = 0.5), plot.subtitle = element_text(hjust = 0.5))+ 
+      geom_text(aes(label = paste(variable,"", round(value/Total, 4)*100,"%")), position = position_stack(vjust = .5))+ 
+      coord_flip()+ 
+      labs ( title= "Population Gender Distribution", 
+             subtitle= ifelse(is.null(input$map_shape_click$id),
+                              "Plot of Census Tract 15", 
+                              (paste("Plot of Census Tract",input$map_shape_click$id))))
+    
+  })
+  
   ##########Shravya
   # Leaflet map: population by district by race 
-  output$map <- renderLeaflet({
+  pal1 <- colorNumeric(palette = "viridis", 
+                       domain = s1$SE_T002_01)
+  
+  output$map_shravya <- renderLeaflet({
     m <- leaflet()  %>%
-      addTiles()  %>%addPolygons(data = s1, stroke = TRUE, smoothFactor = 0.2, fillOpacity = .35, color = ~pal(SE_T002_01), group= "South Bend Boundaries")%>%addPolygons(data = s1, stroke = TRUE, smoothFactor = 0.2, fillOpacity = .35, color = ~pal(SE_T002_01), popup = ~SE_T054_01, group= "Total Population")%>%addPolygons(data = s1, stroke = TRUE, smoothFactor = 0.2, fillOpacity = .35, color = ~pal(SE_T002_01), popup = ~SE_T054_02, group= "White/Caucasian") %>% addPolygons(data = s1, stroke = TRUE, smoothFactor = 0.2, fillOpacity = .35, color = ~pal(SE_T002_01), popup = ~SE_T054_03, group= "Black/African American")%>%addPolygons(data = s1, stroke = TRUE, smoothFactor = 0.2, fillOpacity = .35, color = ~pal(SE_T002_01), popup = ~SE_T054_04, group= "American Indian/Alaska Native") %>%addPolygons(data = s1, stroke = TRUE, smoothFactor = 0.2, fillOpacity = .35, color = ~pal(SE_T002_01), popup = ~SE_T054_05, group= "Asian")%>%addPolygons(data = s1, stroke = TRUE, smoothFactor = 0.2, fillOpacity = .35, color = ~pal(SE_T002_01), popup = ~SE_T054_06, group= "Native Hawaiian/Pacific Islander")%>%
-      addPolygons(data = s1, stroke = TRUE, smoothFactor = 0.2, fillOpacity = .35, color = ~pal(SE_T002_01), popup = ~SE_T054_07, group= "Other")%>%addLayersControl(
+      addTiles()  %>%addPolygons(data = s2, 
+                                 stroke = TRUE, 
+                                 smoothFactor = 0.2, 
+                                 fillOpacity = .35, 
+                                 color = ~pal1(SE_T002_01), 
+                                 group= "South Bend Boundaries") %>%
+      addPolygons(data = s2, 
+                  stroke = TRUE, 
+                  smoothFactor = 0.2, 
+                  fillOpacity = .35, 
+                  color = ~pal1(SE_T002_01), 
+                  popup = ~SE_T054_01, 
+                  group= "Total Population") %>% 
+      addPolygons(data = s2, 
+                  stroke = TRUE, 
+                  smoothFactor = 0.2, 
+                  fillOpacity = .35, 
+                  color = ~pal1(SE_T002_01), 
+                  popup = ~SE_T054_02, 
+                  group= "White/Caucasian") %>% 
+      addPolygons(data = s2, 
+                  stroke = TRUE, 
+                  smoothFactor = 0.2, 
+                  fillOpacity = .35, 
+                  color = ~pal1(SE_T002_01), 
+                  popup = ~SE_T054_03, 
+                  group= "Black/African American") %>% 
+      addPolygons(data = s2, 
+                  stroke = TRUE, 
+                  smoothFactor = 0.2, 
+                  fillOpacity = .35, 
+                  color = ~pal1(SE_T002_01), 
+                  popup = ~SE_T054_04, 
+                  group= "American Indian/Alaska Native") %>%
+      addPolygons(data = s2, 
+                  stroke = TRUE, 
+                  smoothFactor = 0.2, 
+                  fillOpacity = .35, 
+                  color = ~pal1(SE_T002_01), 
+                  popup = ~SE_T054_05, 
+                  group= "Asian") %>%
+      addPolygons(data = s2, 
+                  stroke = TRUE, 
+                  smoothFactor = 0.2, 
+                  fillOpacity = .35, 
+                  color = ~pal1(SE_T002_01), 
+                  popup = ~SE_T054_06, 
+                  group= "Native Hawaiian/Pacific Islander") %>%
+      addPolygons(data = s2, stroke = TRUE, smoothFactor = 0.2, fillOpacity = .35, color = ~pal1(SE_T002_01), popup = ~SE_T054_07, group= "Other")%>%addLayersControl(
         overlayGroups = c("South Bend Boundaries"),
-        baseGroups  = c("Total Population", "White/Caucasian", "Black/African American", "American Indian/Alaska Native", "Asian", "Native Hawaiian/Pacific Islander", "Other"),
+        baseGroups  = c("Total Population", "White/Caucasian", 
+                        "Black/African American", "American Indian/Alaska Native", 
+                        "Asian", "Native Hawaiian/Pacific Islander", "Other"),
         options = layersControlOptions(collapsed = T)
       )
   })

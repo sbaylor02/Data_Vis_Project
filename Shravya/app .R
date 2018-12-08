@@ -1,4 +1,4 @@
-
+####SHRAVYA
 library(shiny)
 library(rgdal)
 library(leaflet)
@@ -17,7 +17,7 @@ ui <- fluidPage(
 
 # Define server logic required to draw a histogram
 server <- function(input, output) {
-    # Leaflet map: population by district by race 
+  # Leaflet map: population by district by race 
   output$map <- renderLeaflet({
     m <- leaflet()  %>%
       addTiles()  %>%addPolygons(data = s1, stroke = TRUE, smoothFactor = 0.2, fillOpacity = .35, color = ~pal(SE_T002_01), group= "South Bend Boundaries")%>%addPolygons(data = s1, stroke = TRUE, smoothFactor = 0.2, fillOpacity = .35, color = ~pal(SE_T002_01), popup = ~SE_T054_01, group= "Total Population")%>%addPolygons(data = s1, stroke = TRUE, smoothFactor = 0.2, fillOpacity = .35, color = ~pal(SE_T002_01), popup = ~SE_T054_02, group= "White/Caucasian") %>% addPolygons(data = s1, stroke = TRUE, smoothFactor = 0.2, fillOpacity = .35, color = ~pal(SE_T002_01), popup = ~SE_T054_03, group= "Black/African American")%>%addPolygons(data = s1, stroke = TRUE, smoothFactor = 0.2, fillOpacity = .35, color = ~pal(SE_T002_01), popup = ~SE_T054_04, group= "American Indian/Alaska Native") %>%addPolygons(data = s1, stroke = TRUE, smoothFactor = 0.2, fillOpacity = .35, color = ~pal(SE_T002_01), popup = ~SE_T054_05, group= "Asian")%>%addPolygons(data = s1, stroke = TRUE, smoothFactor = 0.2, fillOpacity = .35, color = ~pal(SE_T002_01), popup = ~SE_T054_06, group= "Native Hawaiian/Pacific Islander")%>%
@@ -26,10 +26,6 @@ server <- function(input, output) {
         baseGroups  = c("Total Population", "White/Caucasian", "Black/African American", "American Indian/Alaska Native", "Asian", "Native Hawaiian/Pacific Islander", "Other"),
         options = layersControlOptions(collapsed = T)
       )
-    
-    
-    
-    
   })
   
 }    
