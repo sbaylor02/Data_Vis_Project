@@ -153,12 +153,16 @@ server <- function(input, output) {
   output$map_rose <- renderLeaflet({
     leaflet()  %>%
       addTiles()  %>%
-      addPolygons(data = s1, layer=~NAME, stroke = TRUE, fillOpacity = .35,  popup = ~popup)
+      addPolygons(data = s1, 
+                  layer=~NAME, 
+                  stroke = TRUE, 
+                  fillOpacity = .35,  
+                  popup = ~popup)
   })
   
   # store the click
-  observeEvent(input$map_shape_click, {
-    p<- input$map_shape_click 
+  observeEvent(input$map_rose_shape_click, {
+    p<- input$map_rose_shape_click 
     print((p)) 
   }
   ) 
@@ -168,9 +172,11 @@ server <- function(input, output) {
   output$barpop <- renderPlot({
     
     population_sub_long2 <- population_sub_long %>% 
-      filter (NAME==ifelse(is.null(input$map_shape_click$id), NAME,input$map_shape_click$id))
+      filter (NAME==ifelse(is.null(input$map_rose_shape_click$id), 
+                           NAME,
+                           input$map_rose_shape_click$id))
     
-    # filter (NAME==ifelse(is.null(input$map_shape_click$id), NAME,input$map_shape_click$id))
+    # filter (NAME==ifelse(is.null(input$map_rose_shape_click$id), NAME,input$map_rose_shape_click$id))
     
     # draw the histogram with the specified number of bins
     ggplot(population_sub_long2, aes(x=variable, y=value))+
@@ -181,27 +187,38 @@ server <- function(input, output) {
             plot.subtitle = element_text(hjust = 0.5))+ 
       #\ylim(0, 1400) +
       labs (y= "Population", title= "Population Age Distribution", 
-            subtitle= ifelse(is.null(input$map_shape_click$id),
+            subtitle= ifelse(is.null(input$map_rose_shape_click$id),
                              "Plot of Census Tract 15", 
-                             (paste("Plot of Census Tract",input$map_shape_click$id))))})
+                             (paste("Plot of Census Tract",
+                                    input$map_rose_shape_click$id))))})
   
   # Make a gender barplot  depending of the selected point
   
   output$bargen <- renderPlot({
     
     gender_sub_long2 <- gender_sub_long %>% 
-      filter (NAME==ifelse(is.null(input$map_shape_click$id), NAME,input$map_shape_click$id))
+      filter (NAME==ifelse(is.null(input$map_rose_shape_click$id), 
+                           NAME,
+                           input$map_rose_shape_click$id))
     
-    ggplot(gender_sub_long2, aes(x=NAME, y=(value/Total), fill=variable), label=value)+ 
-      geom_bar(position = "fill",stat = "identity", fill=c("salmon", "royalblue3"))  +
+    ggplot(gender_sub_long2, 
+           aes(x=NAME, y=(value/Total), fill=variable), 
+           label=value) + 
+      geom_bar(position = "fill",
+               stat = "identity", 
+               fill=c("salmon", "royalblue3"))  +
       theme_void() +
-      theme(legend.position="none", plot.title = element_text(hjust = 0.5), plot.subtitle = element_text(hjust = 0.5))+ 
-      geom_text(aes(label = paste(variable,"", round(value/Total, 4)*100,"%")), position = position_stack(vjust = .5))+ 
+      theme(legend.position="none", 
+            plot.title = element_text(hjust = 0.5), 
+            plot.subtitle = element_text(hjust = 0.5))+ 
+      geom_text(aes(label = paste(variable,"", round(value/Total, 4)*100,"%")), 
+                position = position_stack(vjust = .5))+ 
       coord_flip()+ 
       labs ( title= "Population Gender Distribution", 
-             subtitle= ifelse(is.null(input$map_shape_click$id),
+             subtitle= ifelse(is.null(input$map_rose_shape_click$id),
                               "Plot of Census Tract 15", 
-                              (paste("Plot of Census Tract",input$map_shape_click$id))))
+                              (paste("Plot of Census Tract",
+                                     input$map_rose_shape_click$id))))
     
   })
   

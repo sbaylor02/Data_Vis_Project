@@ -85,7 +85,7 @@ server <- function(input, output, session) {
       filter (NAME==ifelse(is.null(input$map_shape_click$id), NAME,input$map_shape_click$id))
     
     ggplot(gender_sub_long2, aes(x=NAME, y=(value/Total), fill=variable), label=value)+ 
-      geom_bar(position = "fill",stat = "identity", fill=c("salmon", "royalblue3"))  +
+      geom_bar(position = "fillkiva",stat = "identity", fill=c("salmon", "royalblue3"))  +
       theme_void() +
       theme(legend.position="none", plot.title = element_text(hjust = 0.5), plot.subtitle = element_text(hjust = 0.5))+ 
       geom_text(aes(label = paste(variable,"", round(value/Total, 4)*100,"%")), position = position_stack(vjust = .5))+ 
