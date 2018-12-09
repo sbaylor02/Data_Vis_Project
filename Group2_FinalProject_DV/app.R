@@ -54,6 +54,13 @@ s1$popup <- paste("<b>",s1$NAMELSAD,"</b><br>",
 ##########Shravya
 s2 <- readOGR(dsn = '2010_CensusData', "2010_CensusData", stringsAsFactors = FALSE)
 
+##########Pavel
+street_lights <- read.csv("Street_Lights.csv", 
+                          stringsAsFactors = F)
+street_lights[street_lights$Pole_Type %in% c(""," "),]$Pole_Type <- "Unknown"
+street_lights[street_lights$Service %in% c(""," "),]$Service <- "Unknown"
+street_lights$Inspect_Date2 <- as.Date(street_lights$Inspect_Date)
+
 
 ##########Sarah
 #read in the data
@@ -73,13 +80,6 @@ abandoned_center <- SpatialPointsDataFrame(gCentroid(abandoned,
 
 #add the year of outcome as a column in the abandoned data set
 abandoned_center@data$Year_of_Ou <- as.ordered(year(abandoned_center@data$Date_of_Ou))
-
-##########Pavel
-street_lights <- read.csv("Street_Lights.csv", 
-                          stringsAsFactors = F)
-street_lights[street_lights$Pole_Type %in% c(""," "),]$Pole_Type <- "Unknown"
-street_lights[street_lights$Service %in% c(""," "),]$Service <- "Unknown"
-street_lights$Inspect_Date2 <- as.Date(street_lights$Inspect_Date)
 
 ##########Catherine
 #load Abandoned_Property_Parcels shapefile
@@ -110,7 +110,6 @@ ui <- fluidPage(
     #####Rose
     tabPanel("Age/Gender Demographics",
              fluid = TRUE,
-             value = "tab1",
              headerPanel("Select a Census Tract"),
              br(),
              column(7,
@@ -123,13 +122,11 @@ ui <- fluidPage(
     #####Shravya
     tabPanel("Racial Demographics",
              fluid = TRUE,
-             value = "tab2",
              titlePanel("Choose a race and click on a census district to see the race's population within the district"),
              column(8,leafletOutput("map_shravya", height="800px"))),
     #####Pavel
     tabPanel("Poles Ownership Distribution",
              fluid = TRUE,
-             id = "tab3",
              selectInput(inputId = "owner",
                          label = "Ownership", 
                          choices = unique(street_lights$Ownership)),
@@ -137,7 +134,6 @@ ui <- fluidPage(
     #####Sarah
     tabPanel("Abandoned Properties by District", 
              fluid = TRUE, 
-             value = "tab4",
              sidebarLayout(
                sidebarPanel(
                  #create a checkbox to select city council districts
@@ -146,7 +142,7 @@ ui <- fluidPage(
                                     choices = unique(districts$Num),
                                     selected = unique(districts$Num)),
                  #create a checkbox to select the outcome of the abandoned property
-                 checkboxGroupInput(inputId = "outcome",
+                 checkboxGroupInput(inputId = "outcome1",
                                     label = "Choose an Outcome",
                                     choices = unique(abandoned$Outcome_St),
                                     selected = unique(abandoned$Outcome_St)),
@@ -160,7 +156,6 @@ ui <- fluidPage(
     #####Catherine
     tabPanel("Abandoned Properties Figures",
              fluid = TRUE,
-             value = "tab5",
              # Application title
              titlePanel("South Bend Abandoned Properties Parcels"),
              # Sidebar with various inputs to control both the line and bar chart outputs
@@ -388,7 +383,7 @@ server <- function(input, output) {
                   popup = ~popup_dist) %>%
       #add the chosen abandon properties to the map
       addCircleMarkers(data = abandoned_center[(abandoned_center$Council_Di %in% input$district) & 
-                                                 (abandoned_center$Outcome_St %in% input$outcome) &
+                                                 (abandoned_center$Outcome_St %in% input$outcome1) &
                                                  (abandoned_center$Year_of_Ou %in% input$year),],
                        radius = 2,
                        popup = ~Suffix,
