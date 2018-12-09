@@ -5,6 +5,7 @@
 
 #load the necessary packages
 library(shiny)
+library(plyr)
 library(tidyverse)
 library(tidycensus)
 library(tidyr)
@@ -80,6 +81,21 @@ street_lights[street_lights$Pole_Type %in% c(""," "),]$Pole_Type <- "Unknown"
 street_lights[street_lights$Service %in% c(""," "),]$Service <- "Unknown"
 street_lights$Inspect_Date2 <- as.Date(street_lights$Inspect_Date)
 
+##########Catherine
+#load Abandoned_Property_Parcels shapefile
+abandPropParc <- readOGR(dsn = "Abandoned_Property_Parcels", 
+                         layer = "Abandoned_Property_Parcels", 
+                         stringsAsFactors = FALSE)
+
+#extract data into separate data frame
+abandPropParc_data <- abandPropParc@data
+
+#change variable type of Date_of_Ou to date
+abandPropParc_data$Date_of_Ou <- as.Date(abandPropParc_data$Date_of_Ou)
+
+#add variable to show year of Date_of_OU
+abandPropParc_data$Year_of_Ou <- year(abandPropParc_data$Date_of_Ou)
+
 
 
 
@@ -91,7 +107,8 @@ ui <- fluidPage(
   # Show a plot of the generated distribution
   tabsetPanel(type = "tabs",
               id = "myTabs",
-    tabPanel("rose",
+    #####Rose
+    tabPanel("Age/Gender Demographics",
              fluid = TRUE,
              value = "tab1",
              headerPanel("Select a Census Tract"),
@@ -103,19 +120,22 @@ ui <- fluidPage(
                     br(), 
                     plotOutput("bargen", height="200px")),
              br()),
-    tabPanel("shravya",
+    #####Shravya
+    tabPanel("Racial Demographics",
              fluid = TRUE,
              value = "tab2",
              titlePanel("Choose a race and click on a census district to see the race's population within the district"),
              column(8,leafletOutput("map_shravya", height="800px"))),
-    tabPanel("pavel",
+    #####Pavel
+    tabPanel("Poles Ownership Distribution",
              fluid = TRUE,
              id = "tab3",
              selectInput(inputId = "owner",
                          label = "Ownership", 
                          choices = unique(street_lights$Ownership)),
              leafletOutput("mymap",height = 1000)),
-    tabPanel("sarah", 
+    #####Sarah
+    tabPanel("Abandoned Properties by District", 
              fluid = TRUE, 
              value = "tab4",
              sidebarLayout(
@@ -137,9 +157,53 @@ ui <- fluidPage(
                                     selected = unique(abandoned_center$Year_of_Ou))),
                # Show a plot of the generated distribution
                mainPanel(leafletOutput("district_map")))),
-    tabPanel("catherine",
+    #####Catherine
+    tabPanel("Abandoned Properties Figures",
              fluid = TRUE,
-             value = "tab5")
+             value = "tab5",
+             # Application title
+             titlePanel("South Bend Abandoned Properties Parcels"),
+             # Sidebar with various inputs to control both the line and bar chart outputs
+             sidebarLayout(
+               sidebarPanel(
+                 # add help text to guide the user to make selections
+                 helpText("Select desired details with which to customize the charts by 
+                          using the various inputs below."),
+                 # add help text to guide the user to make selections
+                 helpText("NA selections denote missing values."),
+                 # add multi-check box input selection for the type of outcome(s)
+                 checkboxGroupInput(inputId = "outcome",
+                                    label = "Abandoned Property Parcel Outcome:",
+                                    choices = c("Demolished", "Deconstructed", "Repaired",
+                                                "Repaired & Occupied", "Occupied & Not Repaired", 
+                                                "NA"),
+                                    selected = c("Demolished", "Deconstructed", "Repaired",
+                                                 "Repaired & Occupied", "Occupied & Not Repaired", 
+                                                 "NA")),
+                 # add multi-check box input selection for the city council district(s) to view
+                 checkboxGroupInput(inputId = "councilDistrict",
+                                    label = "City Council District:",
+                                    choices = c("1", "2", "3", "4", "5", "6", "NA"),
+                                    selected = c("1", "2", "3", "4", "5", "6", "NA")),
+                 # add slider input to select which year range of data to show
+                 # date range of data is 3/28/13 to 3/23/18
+                 sliderInput(inputId = "years",
+                             "Years of Data to Display:",
+                             min = 2013,
+                             max = 2018,
+                             value = c(2013, 2018),
+                             sep = ""),
+                 # add help text to define available date range
+                 helpText("Property outcome dates range from March 2013 through March 2018.")
+                 ),
+               # Show the generated line and bar charts
+               mainPanel(
+                 # line chart of outcome figures over time
+                 plotOutput("outcomePlot"),
+                 # bar chart of code enforcment details
+                 plotOutput("codeEnforPlot")
+               )
+             ))
   )
 )
 # Define server logic required to draw a histogram
@@ -334,6 +398,49 @@ server <- function(input, output) {
 
   
   ##########Catherine
+  # generate inputs based on input$outcome, input$councilDistrict, & input$dateRange
+  # from ui.R
+  
+  APP_data <- reactive({
+    abandPropParc_data[(abandPropParc_data$Outcome_St %in% input$outcome) & 
+                         (abandPropParc_data$Council_Di %in% input$councilDistrict) &
+                         (abandPropParc_data$Year_of_Ou >= input$years[1] & 
+                            abandPropParc_data$Year_of_Ou <= input$years[2]),]
+  })
+  
+  # generate frequency table for line chart
+  APP_data_freq <- reactive({
+    plyr::count(APP_data(), c("Outcome_St", "Year_of_Ou"))
+  })
+  
+  
+  # draw line chart displaying outcome results over time
+  output$outcomePlot <- renderPlot({
+    ggplot(data = APP_data_freq(),
+           aes(x = APP_data_freq()$Year_of_Ou, 
+               y = APP_data_freq()$freq, 
+               group = APP_data_freq()$Outcome_St, 
+               color = APP_data_freq()$Outcome_St)) +
+      geom_line() +
+      geom_point() +
+      labs(title = "Parcel Outcomes Over Time", x = "Year", y = "Count of Parcels") +
+      scale_color_discrete("Parcel Outcome") +
+      theme_minimal()
+  })
+  
+  # draw bar chart displaying 
+  output$codeEnforPlot <- renderPlot({
+    ggplot(data = APP_data(), 
+           aes(x = APP_data()$Code_Enfor)) +
+      geom_bar() +
+      labs(title = "Parcel Code Enforcement Distribution", 
+           x = "Code Enforcement Categories",
+           y = "Count of Parcels") +
+      theme_minimal() +
+      theme(axis.text.x = element_text(angle = 40,
+                                       hjust = 1,
+                                       vjust = 1))
+  })
 }
 
 # Run the application 
